@@ -26,6 +26,10 @@ from core.chat_attachments import (
     SUPPORTED_IMAGE_EXTENSIONS,
     ChatImageAttachment,
 )
+from core.chat_text_attachments import (
+    SUPPORTED_TEXT_EXTENSIONS,
+    ChatTextAttachment,
+)
 
 
 class ChatMessageWidget(QFrame):
@@ -38,6 +42,7 @@ class ChatMessageWidget(QFrame):
         tr,
         parent=None,
         image_filename: str = "",
+        text_filename: str = "",
         transfer_payload: str = "",
         transfer_ready: bool = False,
         analysis_type: str = "chat",
@@ -64,6 +69,13 @@ class ChatMessageWidget(QFrame):
             image_label.setObjectName("chat_message_image")
             image_label.setTextFormat(Qt.TextFormat.PlainText)
             layout.addWidget(image_label)
+        if text_filename:
+            text_file_label = QLabel(
+                tr("chat.text_file_message", filename=text_filename)
+            )
+            text_file_label.setObjectName("chat_message_text_file")
+            text_file_label.setTextFormat(Qt.TextFormat.PlainText)
+            layout.addWidget(text_file_label)
         body = QLabel(text)
         body.setObjectName("chat_message_body")
         body.setTextFormat(Qt.TextFormat.PlainText)
@@ -99,6 +111,8 @@ class ChatPage(QWidget):
     send_requested = Signal(str, object)
     image_requested = Signal()
     image_path_requested = Signal(str)
+    text_file_requested = Signal()
+    text_file_path_requested = Signal(str)
     analyze_requested = Signal(str)
     settings_requested = Signal()
     cancel_requested = Signal()
@@ -118,7 +132,7 @@ class ChatPage(QWidget):
         self._profiles: tuple[tuple[str, str, tuple[str, ...]], ...] = ()
         self._syncing_target = False
         self._any_llm_busy = False
-        self._attachment: ChatImageAttachment | None = None
+        self._attachment: ChatImageAttachment | ChatTextAttachment | None = None
         self._status_is_error = False
 
         root = QVBoxLayout(self)
@@ -333,7 +347,7 @@ class ChatPage(QWidget):
         self.remove_attachment_button = QPushButton("×")
         self.remove_attachment_button.setObjectName("chat_remove_attachment")
         self.remove_attachment_button.setFixedWidth(28)
-        self.remove_attachment_button.setToolTip(self.tr("chat.remove_image"))
+        self.remove_attachment_button.setToolTip(self.tr("chat.remove_attachment"))
         self.remove_attachment_button.clicked.connect(self.clear_attachment)
         attachment_actions.addWidget(self.remove_attachment_button)
         attachment_details.addLayout(attachment_actions)
@@ -355,6 +369,11 @@ class ChatPage(QWidget):
         self.image_button.setObjectName("chat_add_image_button")
         self.image_button.clicked.connect(self.image_requested)
         input_actions.addWidget(self.image_button)
+        self.text_file_button = QPushButton(self.tr("chat.add_text_file"))
+        self.text_file_button.setObjectName("chat_add_text_file_button")
+        self.text_file_button.setToolTip(self.tr("chat.add_text_file_tooltip"))
+        self.text_file_button.clicked.connect(self.text_file_requested)
+        input_actions.addWidget(self.text_file_button)
         input_actions.addWidget(self.new_chat_button)
         input_actions.addStretch()
         self.cancel_button = QPushButton(self.tr("common.cancel"))
@@ -397,24 +416,34 @@ class ChatPage(QWidget):
             target.installEventFilter(self)
 
     @property
-    def attachment(self) -> ChatImageAttachment | None:
+    def attachment(self) -> ChatImageAttachment | ChatTextAttachment | None:
         return self._attachment
 
-    def set_attachment(self, attachment: ChatImageAttachment) -> None:
+    def set_attachment(
+        self,
+        attachment: ChatImageAttachment | ChatTextAttachment,
+    ) -> None:
         self._attachment = attachment
         self.attachment_label.setText(attachment.filename)
         self.attachment_label.setToolTip(attachment.source_path)
-        pixmap = QPixmap()
-        if pixmap.loadFromData(attachment.image_bytes):
-            self.attachment_thumbnail.setPixmap(
-                pixmap.scaled(
-                    QSize(96, 72),
-                    Qt.AspectRatioMode.KeepAspectRatio,
-                    Qt.TransformationMode.SmoothTransformation,
+        is_image = isinstance(attachment, ChatImageAttachment)
+        self.analyze_button.setVisible(is_image)
+        self.reference_analyze_button.setVisible(is_image)
+        if is_image:
+            pixmap = QPixmap()
+            if pixmap.loadFromData(attachment.image_bytes):
+                self.attachment_thumbnail.setPixmap(
+                    pixmap.scaled(
+                        QSize(96, 72),
+                        Qt.AspectRatioMode.KeepAspectRatio,
+                        Qt.TransformationMode.SmoothTransformation,
+                    )
                 )
-            )
+            else:
+                self.attachment_thumbnail.clear()
         else:
             self.attachment_thumbnail.clear()
+            self.attachment_thumbnail.setText("TXT")
         self.attachment_chip.setVisible(True)
         self.input_group.setMaximumHeight(260)
         self.mmproj_guidance.setVisible(False)
@@ -425,6 +454,8 @@ class ChatPage(QWidget):
         self.attachment_label.clear()
         self.attachment_label.setToolTip("")
         self.attachment_thumbnail.clear()
+        self.analyze_button.setVisible(True)
+        self.reference_analyze_button.setVisible(True)
         self.attachment_chip.setVisible(False)
         self.input_group.setMaximumHeight(160)
         self._update_send_state()
@@ -439,6 +470,7 @@ class ChatPage(QWidget):
         text: str,
         *,
         image_filename: str = "",
+        text_filename: str = "",
         transfer_payload: str = "",
         transfer_ready: bool = False,
         analysis_type: str = "chat",
@@ -450,6 +482,7 @@ class ChatPage(QWidget):
             self.tr,
             self.conversation_widget,
             image_filename=image_filename,
+            text_filename=text_filename,
             transfer_payload=transfer_payload,
             transfer_ready=transfer_ready,
             analysis_type=analysis_type,
@@ -496,10 +529,12 @@ class ChatPage(QWidget):
         self._any_llm_busy = any_llm_busy
         self.input_text.setEnabled(not chat_busy)
         self.image_button.setEnabled(not any_llm_busy)
+        self.text_file_button.setEnabled(not any_llm_busy)
         self.remove_attachment_button.setEnabled(not chat_busy)
-        self.analyze_button.setEnabled(bool(self._attachment) and not any_llm_busy)
+        is_image = isinstance(self._attachment, ChatImageAttachment)
+        self.analyze_button.setEnabled(is_image and not any_llm_busy)
         self.reference_analyze_button.setEnabled(
-            bool(self._attachment) and not any_llm_busy
+            is_image and not any_llm_busy
         )
         self.open_settings_button.setEnabled(not any_llm_busy)
         self.cancel_button.setEnabled(chat_busy)
@@ -511,7 +546,10 @@ class ChatPage(QWidget):
             bool(self.input_text.toPlainText().strip() or self._attachment)
             and not self._any_llm_busy
         )
-        can_analyze = self._attachment is not None and not self._any_llm_busy
+        can_analyze = (
+            isinstance(self._attachment, ChatImageAttachment)
+            and not self._any_llm_busy
+        )
         self.analyze_button.setEnabled(can_analyze)
         self.reference_analyze_button.setEnabled(can_analyze)
 
@@ -661,22 +699,25 @@ class ChatPage(QWidget):
         self.transfer_panel.setVisible(False)
 
     @staticmethod
-    def _dropped_image_path(event) -> str:
+    def _dropped_attachment(event) -> tuple[str, str]:
         mime_data = event.mimeData()
         if not mime_data.hasUrls():
-            return ""
+            return "", ""
         for url in mime_data.urls():
             if not url.isLocalFile():
                 continue
             path = url.toLocalFile()
-            if Path(path).suffix.lower() in SUPPORTED_IMAGE_EXTENSIONS:
-                return path
-        return ""
+            extension = Path(path).suffix.lower()
+            if extension in SUPPORTED_IMAGE_EXTENSIONS:
+                return "image", path
+            if extension in SUPPORTED_TEXT_EXTENSIONS:
+                return "text", path
+        return "", ""
 
     def _handle_drag_event(self, event) -> bool:
         event_type = event.type()
         if event_type in {QEvent.Type.DragEnter, QEvent.Type.DragMove}:
-            if self._dropped_image_path(event):
+            if self._dropped_attachment(event)[1]:
                 self.drop_hint.setVisible(True)
                 event.acceptProposedAction()
             else:
@@ -688,10 +729,13 @@ class ChatPage(QWidget):
             return True
         if event_type == QEvent.Type.Drop:
             self.drop_hint.setVisible(False)
-            path = self._dropped_image_path(event)
+            kind, path = self._dropped_attachment(event)
             if path:
                 event.acceptProposedAction()
-                self.image_path_requested.emit(path)
+                if kind == "image":
+                    self.image_path_requested.emit(path)
+                else:
+                    self.text_file_path_requested.emit(path)
             else:
                 event.ignore()
             return True

@@ -5,6 +5,7 @@ import re
 from typing import Any
 
 from .chat_attachments import ChatImageAttachment
+from .chat_text_attachments import ChatTextAttachment
 
 CHAT_SYSTEM_PROMPT = (
     "You are a helpful, neutral, general-purpose assistant. "
@@ -17,8 +18,13 @@ CHAT_MAX_OUTPUT_TOKENS = 1536
 class ChatEngine:
     """Build ordinary chat requests without any prompt-renderer instructions."""
 
-    def __init__(self, image_only_instruction: str = "Please describe this image in detail.") -> None:
+    def __init__(
+        self,
+        image_only_instruction: str = "Please describe this image in detail.",
+        text_file_only_instruction: str = "Please summarize the contents of this file.",
+    ) -> None:
         self.image_only_instruction = image_only_instruction
+        self.text_file_only_instruction = text_file_only_instruction
 
     def request_payload(
         self,
@@ -31,17 +37,38 @@ class ChatEngine:
             role = str(message.get("role", ""))
             content = str(message.get("content", ""))
             image = message.get("image")
+            text_file = message.get("text_file")
             if role not in {"user", "assistant"}:
                 raise ValueError("CHAT_CONVERSATION_INVALID")
             if role == "assistant":
-                if image is not None or not content.strip():
+                if image is not None or text_file is not None or not content.strip():
                     raise ValueError("CHAT_CONVERSATION_INVALID")
                 messages.append({"role": role, "content": content})
                 continue
-            if image is None:
+            if image is not None and text_file is not None:
+                raise ValueError("CHAT_CONVERSATION_INVALID")
+            if image is None and text_file is None:
                 if not content.strip():
                     raise ValueError("CHAT_CONVERSATION_INVALID")
                 messages.append({"role": role, "content": content})
+                continue
+            if text_file is not None:
+                if not isinstance(text_file, ChatTextAttachment):
+                    raise ValueError("CHAT_CONVERSATION_INVALID")
+                request = content.strip() or self.text_file_only_instruction
+                messages.append(
+                    {
+                        "role": "user",
+                        "content": (
+                            f"Attached local text file: {text_file.filename}\n"
+                            "--- BEGIN ATTACHED FILE ---\n"
+                            f"{text_file.text}\n"
+                            "--- END ATTACHED FILE ---\n\n"
+                            "User request:\n"
+                            f"{request}"
+                        ),
+                    }
+                )
                 continue
             if not isinstance(image, ChatImageAttachment):
                 raise ValueError("CHAT_CONVERSATION_INVALID")

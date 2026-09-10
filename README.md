@@ -15,12 +15,14 @@ Local Prompt Studio is a portable Windows desktop application for turning reques
 ## Main modes
 
 - **Prompt Generation** — transforms a Request with a profile-specific renderer.
-- **AI Chat** — local chat, with optional image understanding when a matching `mmproj` is configured.
+- **AI Chat** — local chat with text-file attachments, plus optional image understanding when a matching `mmproj` is configured.
 - **Prompt Library** — stores, searches, tags, copies, and exports completed prompts in local SQLite datasets.
 
 Supported profiles: **MiniMax H3**, **Wan 2.2**, **LTX-2.3**, **Krea 2**, and **Anima**.
 
 UI languages: English (`en-US`), 日本語 (`ja-JP`), 简体中文 (`zh-CN`), Русский (`ru-RU`), and 한국어 (`ko-KR`).
+
+AI Chat accepts one supported plain-text document or source file through **+ Text file** or drag and drop. UTF-8, BOM-marked UTF-16, and Windows Japanese CP932 are supported, up to 512 KiB. Binary, empty, and unsupported files are rejected; PDF, Office documents, audio, and video are not supported. The file is read in memory and sent only to the application-managed localhost llama-server.
 
 ## Quick start
 

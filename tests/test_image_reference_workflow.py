@@ -252,8 +252,20 @@ def test_reference_renderer_is_model_independent_and_transfer_renderer_keeps_fac
 @pytest.mark.parametrize(
     ("locale", "analyze", "reference", "drop", "transfer"),
     (
-        ("ja-JP", "通常解析", "Prompt参照用解析", "ここに画像をドロップ", "転送内容"),
-        ("en-US", "Analyze", "Prompt Reference Analysis", "Drop image here", "Transfer content"),
+        (
+            "ja-JP",
+            "通常解析",
+            "Prompt参照用解析",
+            "ここに画像またはテキストファイルをドロップ",
+            "転送内容",
+        ),
+        (
+            "en-US",
+            "Analyze",
+            "Prompt Reference Analysis",
+            "Drop an image or text file here",
+            "Transfer content",
+        ),
     ),
 )
 def test_image_reference_controls_are_localized(

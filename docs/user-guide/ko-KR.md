@@ -99,6 +99,8 @@ AI 채팅은 프롬프트 생성 GGUF를 공유하거나 별도 Chat GGUF를 사
 
 이미지 인식은 유효한 Chat model과 일치하는 `mmproj`를 설정해야 합니다. **+ 이미지** 또는 Drag & Drop으로 PNG, JPG／JPEG, 정적 WebP를 첨부할 수 있습니다. animated WebP는 지원하지 않습니다. 정적 WebP는 memory에서 PNG로 정규화한 뒤 localhost llama-server로 보냅니다.
 
+**+ 텍스트 파일** 또는 Drag & Drop으로 지원되는 일반 텍스트 문서나 소스 코드 파일 하나를 첨부할 수 있습니다. UTF-8, BOM이 있는 UTF-16, Windows 일본어 CP932를 지원하며 최대 크기는 512 KiB입니다. 바이너리, 빈 파일, 지원하지 않는 형식은 거부합니다. PDF, Office 문서, 오디오, 비디오는 지원하지 않습니다. 텍스트는 memory에만 보관하고 앱이 관리하는 localhost llama-server에서만 처리하며, 텍스트 첨부에는 `mmproj`가 필요하지 않습니다.
+
 **분석**은 일반 Chat 답변을 만들고 **프롬프트 참조 분석**은 Prompt Generation에서 재사용하기 쉬운 model-independent 정보를 만듭니다. transfer preview를 확인하고 편집한 다음 **프롬프트 보충으로 보내기**로 요청, 전체 보충, 시작 이미지 보충 또는 종료 이미지 보충에 추가합니다.
 
 이미지, Chat 내용, Prompt는 외부 cloud로 전송하지 않고 앱이 관리하는 localhost llama-server에서만 처리합니다.

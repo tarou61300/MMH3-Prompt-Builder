@@ -101,6 +101,8 @@ AI Chat can share the Prompt Generation GGUF or use a separate Chat GGUF. Only o
 
 For vision, configure a matching `mmproj` for the effective Chat model. Use **+ Image** or drag and drop a PNG, JPG/JPEG, or static WebP. Animated WebP is unsupported. A static WebP is decoded and normalized to PNG in memory before it is sent to the local llama-server.
 
+Use **+ Text file** or drag and drop to attach one supported plain-text document or source file. UTF-8, BOM-marked UTF-16, and Windows Japanese CP932 are accepted, with a 512 KiB limit. Binary, empty, and unsupported files are rejected. PDF, Office documents, audio, and video are not supported. The text is kept in memory and processed only by the application-managed localhost llama-server; text attachments do not require `mmproj`.
+
 **Analyze** provides a normal chat analysis. **Prompt Reference Analysis** produces model-independent reference information intended for Prompt Generation. Review the transfer preview, edit it if needed, and use **Send to prompt supplement** to append it to Request, Overall Supplement, Start image supplement, or End image supplement as supported by the target Task.
 
 Images, chat messages, and prompts are sent only to the application-managed localhost llama-server, not to an external cloud service.

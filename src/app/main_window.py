@@ -39,6 +39,7 @@ from PySide6.QtWidgets import (
 from core.comfyui_bridge import ComfyUIBridgeError, ComfyUIBridgeService
 from core.chat_engine import ChatEngine
 from core.chat_attachments import ChatImageAttachment, ChatImageError
+from core.chat_text_attachments import ChatTextAttachment, ChatTextFileError
 from core.chat_renderers import PromptTransferRenderer, ReferenceImageRenderer
 from core.config_manager import ConfigManager
 from core.history_manager import HistoryManager
@@ -952,6 +953,8 @@ class MainWindow(QMainWindow):
         self.chat_page.send_requested.connect(self._send_chat_message)
         self.chat_page.image_requested.connect(self._select_chat_image)
         self.chat_page.image_path_requested.connect(self._attach_chat_image)
+        self.chat_page.text_file_requested.connect(self._select_chat_text_file)
+        self.chat_page.text_file_path_requested.connect(self._attach_chat_text_file)
         self.chat_page.analyze_requested.connect(self._analyze_attached_image)
         self.chat_page.settings_requested.connect(self._open_chat_model_settings)
         self.chat_page.cancel_requested.connect(self._cancel_chat)
@@ -1617,10 +1620,49 @@ class MainWindow(QMainWindow):
         self.chat_page.set_attachment(attachment)
         self.chat_page.set_status("")
 
+    def _select_chat_text_file(self) -> None:
+        if (
+            self._generation_active
+            or self._chat_active
+            or self._translation_active
+        ):
+            return
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            self.tr("chat.text_file.choose"),
+            "",
+            self.tr("chat.text_file.filter"),
+        )
+        if path:
+            self._attach_chat_text_file(path)
+
+    def _attach_chat_text_file(self, path: str) -> None:
+        if (
+            self._generation_active
+            or self._chat_active
+            or self._translation_active
+        ):
+            return
+        try:
+            attachment = ChatTextAttachment.from_file(path)
+        except ChatTextFileError as exc:
+            key = {
+                "CHAT_TEXT_FILE_UNSUPPORTED_FORMAT": "chat.error.text_file_format",
+                "CHAT_TEXT_FILE_READ_FAILED": "chat.error.text_file_read",
+                "CHAT_TEXT_FILE_DECODE_FAILED": "chat.error.text_file_decode",
+                "CHAT_TEXT_FILE_BINARY": "chat.error.text_file_binary",
+                "CHAT_TEXT_FILE_TOO_LARGE": "chat.error.text_file_too_large",
+                "CHAT_TEXT_FILE_EMPTY": "chat.error.text_file_empty",
+            }.get(exc.code, "chat.error.text_file_read")
+            self.chat_page.set_status(self.tr(key), error=True)
+            return
+        self.chat_page.set_attachment(attachment)
+        self.chat_page.set_status("")
+
     def _analyze_attached_image(self, analysis_type: str) -> None:
         attachment = self.chat_page.attachment
         if (
-            attachment is None
+            not isinstance(attachment, ChatImageAttachment)
             or self._generation_active
             or self._chat_active
             or self._translation_active
@@ -1650,7 +1692,7 @@ class MainWindow(QMainWindow):
     def _send_chat_message(
         self,
         text: str,
-        attachment: ChatImageAttachment | None = None,
+        attachment: ChatImageAttachment | ChatTextAttachment | None = None,
         *,
         engine: ChatEngine | None = None,
         preserve_draft: bool = False,
@@ -1669,8 +1711,10 @@ class MainWindow(QMainWindow):
         self.config = self.config_manager.load()
         self._update_chat_model_status()
         user_message: dict[str, Any] = {"role": "user", "content": message}
-        if attachment is not None:
+        if isinstance(attachment, ChatImageAttachment):
             user_message["image"] = attachment
+        elif isinstance(attachment, ChatTextAttachment):
+            user_message["text_file"] = attachment
         self.chat_messages.append(user_message)
         self._pending_chat_user_message = user_message
         self._pending_chat_draft = self.chat_page.input_text.toPlainText()
@@ -1679,14 +1723,26 @@ class MainWindow(QMainWindow):
         self._pending_chat_message_widget = self.chat_page.add_message(
             "user",
             message,
-            image_filename=attachment.filename if attachment is not None else "",
+            image_filename=(
+                attachment.filename
+                if isinstance(attachment, ChatImageAttachment)
+                else ""
+            ),
+            text_filename=(
+                attachment.filename
+                if isinstance(attachment, ChatTextAttachment)
+                else ""
+            ),
         )
         if not preserve_draft:
             self.chat_page.input_text.clear()
         self.chat_worker = ChatThread(
             engine=engine
             or ChatEngine(
-                image_only_instruction=self.tr("chat.image_only_instruction")
+                image_only_instruction=self.tr("chat.image_only_instruction"),
+                text_file_only_instruction=self.tr(
+                    "chat.text_file_only_instruction"
+                ),
             ),
             server=self.server,
             config=self.config,
@@ -1786,7 +1842,10 @@ class MainWindow(QMainWindow):
 
     def _chat_error(self, error: str) -> None:
         pending = self._pending_chat_user_message
-        if pending is not None and pending.get("image") is not None:
+        if pending is not None and (
+            pending.get("image") is not None
+            or pending.get("text_file") is not None
+        ):
             if self.chat_messages and self.chat_messages[-1] is pending:
                 self.chat_messages.pop()
             widget = self._pending_chat_message_widget

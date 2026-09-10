@@ -99,6 +99,8 @@ AIチャットはPrompt生成GGUFを共有するか、専用GGUFを使用でき�
 
 画像認識には、有効なChat modelに対応する`mmproj`を設定します。**＋画像**またはDrag & DropでPNG、JPG／JPEG、静止WebPを添付できます。animated WebPは非対応です。静止WebPはmemory上でPNGへ正規化してからlocalhost llama-serverへ送ります。
 
+**＋テキストファイル**またはDrag & Dropで、対応するプレーンテキスト文書／ソースコードを1ファイル添付できます。UTF-8、BOM付きUTF-16、Windows日本語CP932に対応し、上限は512 KiBです。バイナリ、空、非対応形式は拒否します。PDF、Office文書、音声、動画は非対応です。本文はmemory上だけで読み、アプリ管理下のlocalhost llama-serverで処理します。テキスト添付に`mmproj`は不要です。
+
 **通常解析**は自由なChat回答を、**Prompt参照用解析**はPrompt生成で再利用しやすいmodel非依存情報を作ります。転送previewを確認・編集し、**Prompt補足へ転送**でRequest、共通補足、開始画像補足、終了画像補足の対応先へ追記します。
 
 画像、Chat本文、Promptは外部cloudへ送られず、アプリ管理下のlocalhost llama-serverだけで処理されます。

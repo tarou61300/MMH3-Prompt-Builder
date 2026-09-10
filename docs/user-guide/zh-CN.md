@@ -99,6 +99,8 @@ AI Chat可以共享Prompt生成GGUF，也可以使用专用Chat GGUF。同时只
 
 图像识别需要为有效Chat model配置匹配的`mmproj`。使用**+ 图像**或Drag & Drop添加PNG、JPG／JPEG、静止WebP。animated WebP不受支持。静止WebP会在memory中标准化为PNG，再发送给localhost llama-server。
 
+使用**+ 文本文件**或Drag & Drop可附加一个受支持的纯文本文档或源代码文件。支持UTF-8、带BOM的UTF-16和Windows日文CP932，上限为512 KiB。二进制、空文件和不支持的格式会被拒绝；PDF、Office文档、音频和视频不受支持。文本只保存在memory中，并仅由本程序管理的localhost llama-server处理；文本附件不需要`mmproj`。
+
 **分析**生成普通Chat回答；**Prompt Reference分析**生成便于Prompt生成复用的model-independent信息。检查并编辑transfer preview，然后通过**发送到Prompt补充**追加到Request、整体补充、开始图像补充或结束图像补充。
 
 图像、Chat内容和Prompt不会发送到外部cloud，只由本程序管理的localhost llama-server处理。

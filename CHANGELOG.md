@@ -1,5 +1,25 @@
 # Changelog
 
+## 3.2.0 — 2026-09-11
+
+AI Chat local text-file attachment update.
+
+### Added
+
+- Added one-file text and source-code attachments to AI Chat through the file picker or drag and drop.
+- Added strict decoding for UTF-8, BOM-marked UTF-16 LE／BE, and Windows Japanese CP932.
+- Added a 512 KiB limit with separate errors for unsupported formats, read failures, decode failures, binary content, oversized files, and empty files.
+- Added localized file-only summary instructions and attachment UI for Japanese, English, Simplified Chinese, Russian, and Korean.
+- Added documentation and regression coverage for text-file attachments.
+
+### Privacy and compatibility
+
+- Keeps attachment content in memory and sends it only as user-provided content to the application-managed localhost llama-server.
+- Does not copy or persist attachment content and does not include its absolute path in the LLM payload.
+- Restores the draft and attachment when a send or context preflight fails.
+- Keeps existing image attachments, Vision／mmproj, normal analysis, and Prompt Reference Analysis behavior unchanged.
+- PDF, Office documents, RTF, archives, audio, video, OCR, and multiple simultaneous attachments are not included.
+
 ## 3.1.1 — 2026-08-29
 
 Multilingual UI and prompt translation update.

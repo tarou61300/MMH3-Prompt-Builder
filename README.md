@@ -1,14 +1,16 @@
-# Local Prompt Studio v3.1.1
+# Local Prompt Studio v3.2.0
 
-**Windows x64 Portable**
+**Windows x64 portable stable release**
+
+Release date: 2026-09-11
 
 [English](docs/user-guide/en-US.md) | [日本語](docs/user-guide/ja-JP.md) | [简体中文](docs/user-guide/zh-CN.md) | [Русский](docs/user-guide/ru-RU.md) | [한국어](docs/user-guide/ko-KR.md)
 
 ## Download
 
-**[Download the latest official release](https://github.com/tarou61300/Local-Prompt-Studio/releases/latest)**
+**[Download Local-Prompt-Studio-v3.2.0-win-x64-portable.zip](https://github.com/tarou61300/Local-Prompt-Studio/releases/download/v3.2.0/Local-Prompt-Studio-v3.2.0-win-x64-portable.zip)**
 
-Download the Windows portable ZIP and verify it against the included `SHA256SUMS.txt`. Avoid executables redistributed by unofficial sources.
+Download the Windows portable ZIP and verify it against the included `SHA256SUMS.txt`. Extract it and run the application from the `Local-Prompt-Studio-v3.2.0-win-x64-portable`フォルダ. Avoid executables redistributed by unofficial sources.
 
 Local Prompt Studio is a portable Windows desktop application for turning requests into model-specific prompts with a local GGUF language model. It also provides local AI chat and a local Prompt Library. ComfyUI is optional.
 

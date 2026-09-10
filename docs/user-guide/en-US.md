@@ -1,4 +1,4 @@
-# Local Prompt Studio v3.1.1 — User Guide
+# Local Prompt Studio v3.2.0 — User Guide
 
 [README](../../README.md) | **English** | [日本語](ja-JP.md) | [简体中文](zh-CN.md) | [Русский](ru-RU.md) | [한국어](ko-KR.md)
 
